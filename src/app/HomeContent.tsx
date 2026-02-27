@@ -22,7 +22,10 @@ export function HomeContent() {
   const [duelLoading, setDuelLoading] = useState(false);
   const [duelError, setDuelError] = useState<string | null>(null);
 
-  const { mediaType } = useFilterStore();
+  const {
+    mediaType, selectedGenres, selectedProviders, maxRuntime,
+    certification, yearFrom, yearTo, selectedActors,
+  } = useFilterStore();
 
   const handleSubmit = useCallback(async () => {
     setDuelLoading(true);
@@ -30,7 +33,22 @@ export function HomeContent() {
     setView('duel');
 
     try {
-      const pairs = await getDuelPairs(mediaType);
+      const pairs = await getDuelPairs({
+        type: mediaType,
+        providers: selectedProviders.length > 0
+          ? selectedProviders.join('|')
+          : undefined,
+        maxRuntime: String(maxRuntime),
+        genres: selectedGenres.length > 0
+          ? selectedGenres.join(',')
+          : undefined,
+        certification: certification ?? undefined,
+        yearFrom: yearFrom ? String(yearFrom) : undefined,
+        yearTo: yearTo ? String(yearTo) : undefined,
+        actors: selectedActors.length > 0
+          ? selectedActors.map((a) => a.id).join(',')
+          : undefined,
+      });
       setDuelPairs(pairs);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro inesperado';
@@ -38,7 +56,7 @@ export function HomeContent() {
     } finally {
       setDuelLoading(false);
     }
-  }, [mediaType]);
+  }, [mediaType, selectedProviders, maxRuntime, selectedGenres, certification, yearFrom, yearTo, selectedActors]);
 
   const handleDuelComplete = useCallback(async (choices: DuelChoice[]) => {
     const genreCount = new Map<number, number>();

@@ -5,6 +5,9 @@ import { StreamingSelector } from './StreamingSelector';
 import { GenreSelector } from './GenreSelector';
 import { TypeToggle } from './TypeToggle';
 import { DurationSlider } from './DurationSlider';
+import { CertificationSelector } from './CertificationSelector';
+import { YearRangeFilter } from './YearRangeFilter';
+import { ActorSearch } from './ActorSearch';
 import { Card, Button } from '@/components/ui';
 import { useFilterStore } from '@/store/useFilterStore';
 
@@ -33,7 +36,10 @@ export function FilterPanel({ onSubmit, isSubmitting }: FilterPanelProps) {
       <TypeToggle />
       <StreamingSelector providers={providers} isLoading={isLoading} />
       <GenreSelector genres={genres} isLoading={isLoading} />
+      <CertificationSelector />
+      <YearRangeFilter />
       <DurationSlider />
+      <ActorSearch />
 
       <div className="flex flex-col gap-3 pt-2">
         <Button

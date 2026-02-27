@@ -6,7 +6,8 @@ export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
   try {
-    const type = request.nextUrl.searchParams.get('type') as MediaType | null;
+    const searchParams = request.nextUrl.searchParams;
+    const type = searchParams.get('type') as MediaType | null;
 
     if (!type || !['movie', 'tv'].includes(type)) {
       return NextResponse.json(
@@ -15,11 +16,31 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const pairs = await generateDuelPairs(type);
+    const providers = searchParams.get('providers') ?? undefined;
+    const maxRuntimeStr = searchParams.get('maxRuntime');
+    const maxRuntime = maxRuntimeStr ? parseInt(maxRuntimeStr, 10) : undefined;
+    const genres = searchParams.get('genres') ?? undefined;
+    const certification = searchParams.get('certification') ?? undefined;
+    const yearFromStr = searchParams.get('yearFrom');
+    const yearFrom = yearFromStr ? parseInt(yearFromStr, 10) : undefined;
+    const yearToStr = searchParams.get('yearTo');
+    const yearTo = yearToStr ? parseInt(yearToStr, 10) : undefined;
+    const actors = searchParams.get('actors') ?? undefined;
+
+    const pairs = await generateDuelPairs({
+      type,
+      providers,
+      maxRuntime,
+      genres,
+      certification,
+      yearFrom,
+      yearTo,
+      actors,
+    });
 
     if (pairs.length === 0) {
       return NextResponse.json(
-        { error: 'Não foi possível gerar os duelos. Tente novamente.' },
+        { error: 'Não foi possível gerar os duelos com esses filtros. Tente mudar os filtros.' },
         { status: 500 }
       );
     }

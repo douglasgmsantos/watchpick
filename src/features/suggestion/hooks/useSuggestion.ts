@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { getSuggestion } from '@/services/api';
 import { useFilterStore } from '@/store/useFilterStore';
 import { MediaSuggestion } from '@/types';
@@ -17,19 +17,32 @@ export function useSuggestion(): UseSuggestionReturn {
   const [suggestion, setSuggestion] = useState<MediaSuggestion | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const lastPreferredGenres = useRef<number[]>([]);
 
-  const { mediaType, selectedGenre, selectedProviders, maxRuntime } = useFilterStore();
+  const {
+    mediaType, selectedGenres, selectedProviders, maxRuntime,
+    certification, yearFrom, yearTo, selectedActors,
+  } = useFilterStore();
 
   const fetchSuggestion = useCallback(async (preferredGenres?: number[]) => {
     setIsLoading(true);
     setError(null);
 
+    if (preferredGenres) {
+      lastPreferredGenres.current = preferredGenres;
+    }
+
+    const duelGenres = preferredGenres ?? lastPreferredGenres.current;
+
     try {
-      const genres = selectedGenre
-        ? String(selectedGenre)
-        : preferredGenres?.length
-          ? preferredGenres.join(',')
-          : undefined;
+      const genreParts: number[] = [...selectedGenres];
+      for (const g of duelGenres) {
+        if (!genreParts.includes(g)) genreParts.push(g);
+      }
+
+      const genres = genreParts.length > 0
+        ? genreParts.join(',')
+        : undefined;
 
       const result = await getSuggestion({
         type: mediaType,
@@ -38,8 +51,14 @@ export function useSuggestion(): UseSuggestionReturn {
           ? selectedProviders.join('|')
           : undefined,
         maxRuntime: String(maxRuntime),
-        preferredGenres: preferredGenres?.length
-          ? preferredGenres.join(',')
+        preferredGenres: duelGenres.length > 0
+          ? duelGenres.join(',')
+          : undefined,
+        certification: certification ?? undefined,
+        yearFrom: yearFrom ? String(yearFrom) : undefined,
+        yearTo: yearTo ? String(yearTo) : undefined,
+        actors: selectedActors.length > 0
+          ? selectedActors.map((a) => a.id).join(',')
           : undefined,
       });
 
@@ -51,11 +70,12 @@ export function useSuggestion(): UseSuggestionReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [mediaType, selectedGenre, selectedProviders, maxRuntime]);
+  }, [mediaType, selectedGenres, selectedProviders, maxRuntime, certification, yearFrom, yearTo, selectedActors]);
 
   const clear = useCallback(() => {
     setSuggestion(null);
     setError(null);
+    lastPreferredGenres.current = [];
   }, []);
 
   return { suggestion, isLoading, error, fetchSuggestion, clear };

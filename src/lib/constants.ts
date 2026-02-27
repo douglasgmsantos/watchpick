@@ -13,6 +13,12 @@ export const RUNTIME_STEP = 10;
 
 export const MAX_TMDB_PAGE = 500;
 
+export const CERTIFICATIONS = ['L', '10', '12', '14', '16', '18'] as const;
+export type Certification = (typeof CERTIFICATIONS)[number];
+
+export const CURRENT_YEAR = new Date().getFullYear();
+export const MIN_YEAR = 1950;
+
 export function posterUrl(path: string | null): string {
   if (!path) return '/placeholder-poster.svg';
   return `${TMDB_IMAGE_BASE_URL}/${TMDB_POSTER_SIZE}${path}`;

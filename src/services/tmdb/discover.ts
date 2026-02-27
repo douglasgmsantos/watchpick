@@ -23,13 +23,17 @@ interface DiscoverParams {
   genres?: string;
   providers?: string;
   maxRuntime?: number;
+  certification?: string;
+  yearFrom?: number;
+  yearTo?: number;
+  actors?: string;
   page?: number;
 }
 
 async function discoverMedia(
   params: DiscoverParams
 ): Promise<TMDBDiscoverResponse> {
-  const { type, genres, providers, maxRuntime, page = 1 } = params;
+  const { type, genres, providers, maxRuntime, certification, yearFrom, yearTo, actors, page = 1 } = params;
   const path = `/discover/${type}`;
 
   const queryParams: Record<string, string | number | undefined> = {
@@ -52,6 +56,35 @@ async function discoverMedia(
   if (maxRuntime && type === 'movie') {
     queryParams['with_runtime.lte'] = maxRuntime;
     queryParams['with_runtime.gte'] = 1;
+  }
+
+  if (certification) {
+    queryParams.certification_country = DEFAULT_REGION;
+    queryParams['certification.lte'] = certification;
+  }
+
+  if (yearFrom) {
+    if (type === 'movie') {
+      queryParams['primary_release_date.gte'] = `${yearFrom}-01-01`;
+    } else {
+      queryParams['first_air_date.gte'] = `${yearFrom}-01-01`;
+    }
+  }
+
+  if (yearTo) {
+    if (type === 'movie') {
+      queryParams['primary_release_date.lte'] = `${yearTo}-12-31`;
+    } else {
+      queryParams['first_air_date.lte'] = `${yearTo}-12-31`;
+    }
+  }
+
+  if (actors) {
+    if (type === 'movie') {
+      queryParams.with_cast = actors;
+    } else {
+      queryParams.with_people = actors;
+    }
   }
 
   return tmdbFetch<TMDBDiscoverResponse>(path, queryParams);
@@ -123,6 +156,10 @@ export async function getRandomSuggestion(params: {
   genres?: string;
   providers?: string;
   maxRuntime?: number;
+  certification?: string;
+  yearFrom?: number;
+  yearTo?: number;
+  actors?: string;
 }): Promise<MediaSuggestion | null> {
   const firstPage = await discoverMedia({ ...params, page: 1 });
 

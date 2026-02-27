@@ -26,7 +26,10 @@ export function useDuel(): UseDuelReturn {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { mediaType } = useFilterStore();
+  const {
+    mediaType, selectedProviders, maxRuntime, selectedGenres,
+    certification, yearFrom, yearTo, selectedActors,
+  } = useFilterStore();
 
   const totalRounds = pairs.length;
   const isComplete = totalRounds > 0 && currentRound >= totalRounds;
@@ -38,7 +41,22 @@ export function useDuel(): UseDuelReturn {
     setCurrentRound(0);
 
     try {
-      const duelPairs = await getDuelPairs(mediaType);
+      const duelPairs = await getDuelPairs({
+        type: mediaType,
+        providers: selectedProviders.length > 0
+          ? selectedProviders.join('|')
+          : undefined,
+        maxRuntime: String(maxRuntime),
+        genres: selectedGenres.length > 0
+          ? selectedGenres.join(',')
+          : undefined,
+        certification: certification ?? undefined,
+        yearFrom: yearFrom ? String(yearFrom) : undefined,
+        yearTo: yearTo ? String(yearTo) : undefined,
+        actors: selectedActors.length > 0
+          ? selectedActors.map((a) => a.id).join(',')
+          : undefined,
+      });
       setPairs(duelPairs);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Erro inesperado';
@@ -46,7 +64,7 @@ export function useDuel(): UseDuelReturn {
     } finally {
       setIsLoading(false);
     }
-  }, [mediaType]);
+  }, [mediaType, selectedProviders, maxRuntime, selectedGenres, certification, yearFrom, yearTo, selectedActors]);
 
   const makeChoice = useCallback((choice: DuelChoice) => {
     setChoices((prev) => [...prev, choice]);

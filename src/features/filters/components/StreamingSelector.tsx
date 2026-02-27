@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Image from 'next/image';
 import { StreamingProvider } from '@/types';
 import { useFilterStore } from '@/store/useFilterStore';
@@ -7,20 +8,27 @@ import { logoUrl } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui';
 
+const VISIBLE_COUNT = 7;
+
 interface StreamingSelectorProps {
   providers: StreamingProvider[];
   isLoading: boolean;
 }
 
+function getAllIds(provider: StreamingProvider): number[] {
+  return provider.variantIds ?? [provider.id];
+}
+
 export function StreamingSelector({ providers, isLoading }: StreamingSelectorProps) {
-  const { selectedProviders, toggleProvider } = useFilterStore();
+  const { selectedProviders, setProviders } = useFilterStore();
+  const [expanded, setExpanded] = useState(false);
 
   if (isLoading) {
     return (
       <div className="space-y-3">
         <label className="text-sm font-medium text-gray-400">Streamings</label>
         <div className="flex flex-wrap gap-3">
-          {Array.from({ length: 8 }).map((_, i) => (
+          {Array.from({ length: VISIBLE_COUNT }).map((_, i) => (
             <Skeleton key={i} variant="circular" className="w-12 h-12" />
           ))}
         </div>
@@ -28,20 +36,40 @@ export function StreamingSelector({ providers, isLoading }: StreamingSelectorPro
     );
   }
 
+  const visibleProviders = expanded ? providers : providers.slice(0, VISIBLE_COUNT);
+  const hasMore = providers.length > VISIBLE_COUNT;
+
+  const selectedCount = providers.filter((p) => {
+    const ids = getAllIds(p);
+    return ids.some((id) => selectedProviders.includes(id));
+  }).length;
+
+  const toggleProvider = (provider: StreamingProvider) => {
+    const ids = getAllIds(provider);
+    const isSelected = ids.some((id) => selectedProviders.includes(id));
+
+    if (isSelected) {
+      setProviders(selectedProviders.filter((id) => !ids.includes(id)));
+    } else {
+      setProviders([...selectedProviders, ...ids]);
+    }
+  };
+
   return (
     <div className="space-y-3">
       <label className="text-sm font-medium text-gray-400">
-        Streamings {selectedProviders.length > 0 && (
-          <span className="text-violet-400">({selectedProviders.length})</span>
+        Streamings {selectedCount > 0 && (
+          <span className="text-violet-400">({selectedCount})</span>
         )}
       </label>
       <div className="flex flex-wrap gap-3">
-        {providers.map((provider) => {
-          const isSelected = selectedProviders.includes(provider.id);
+        {visibleProviders.map((provider) => {
+          const ids = getAllIds(provider);
+          const isSelected = ids.some((id) => selectedProviders.includes(id));
           return (
             <button
               key={provider.id}
-              onClick={() => toggleProvider(provider.id)}
+              onClick={() => toggleProvider(provider)}
               aria-label={`${isSelected ? 'Remover' : 'Selecionar'} ${provider.name}`}
               aria-pressed={isSelected}
               className={cn(
@@ -51,6 +79,7 @@ export function StreamingSelector({ providers, isLoading }: StreamingSelectorPro
                   ? 'ring-2 ring-violet-500 scale-110 shadow-lg shadow-violet-500/20'
                   : 'opacity-50 hover:opacity-80 hover:scale-105'
               )}
+              title={provider.name}
             >
               <Image
                 src={logoUrl(provider.logoPath)}
@@ -63,6 +92,15 @@ export function StreamingSelector({ providers, isLoading }: StreamingSelectorPro
           );
         })}
       </div>
+
+      {hasMore && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-sm text-violet-400 hover:text-violet-300 transition-colors font-medium"
+        >
+          {expanded ? 'Ver menos' : `Ver mais (${providers.length - VISIBLE_COUNT})`}
+        </button>
+      )}
     </div>
   );
 }
